@@ -40,7 +40,8 @@ pip install -r requirements.txt
 ```
 ### Create a .env file
 ```
-move the content of env.example file inside .env file
+#move the content of env.example file inside .env file
+
 SECRET_KEY = "......................................"
 ```
 
