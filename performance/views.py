@@ -33,14 +33,36 @@ class VendorPerformanceView(APIView):
             average_response_time = 0
             fulfillment_rate = 0
             if completed_purchase_orders:
-                on_time_delivery_rate = (completed_purchase_orders.filter(delivery_date__lte=completed_purchase_orders.delivery_date).count() / completed_purchase_orders.count()) * 100
+                
+                on_time_delivery_orders = completed_purchase_orders.filter(delivery_date__lte=F('delivery_date'))
+                completed_purchase_orders_count = completed_purchase_orders.count()
+                if completed_purchase_orders_count == 0:
+                    on_time_delivery_rate = 0
+                else:
+                    on_time_delivery_rate = (on_time_delivery_orders.count() / completed_purchase_orders.count()) * 100.0
+
+                
                 quality_rating_avg = completed_purchase_orders.aggregate(Avg('quality_rating'))['quality_rating__avg']
-                average_response_time = completed_purchase_orders.aggregate(Avg(F('acknowledgment_date') - F('issue_date')))['acknowledgment_date__avg']
-                fulfillment_rate = (completed_purchase_orders.filter(status='completed').count() / purchase_orders.count()) * 100
+                average_response_time = completed_purchase_orders.aggregate(
+                    avg_response_time=Avg(F('acknowledgment_date') - F('issue_date'))
+                )['avg_response_time']
+                
+                # Convert timedelta to seconds and then to float
+                average_response_time_seconds = average_response_time.total_seconds()
+
+                total_purchase_orders_count = purchase_orders.count()
+                completed_purchase_orders_count = completed_purchase_orders.count()
+                
+                # Check if denominator is zero
+                if total_purchase_orders_count == 0:
+                    fulfillment_rate = 0
+                else:
+                    fulfillment_rate = (completed_purchase_orders_count / total_purchase_orders_count) * 100
+       
             data = {
                 'on_time_delivery_rate': on_time_delivery_rate,
                 'quality_rating_avg': quality_rating_avg,
-                'average_response_time': average_response_time,
+                'average_response_time_seconds': average_response_time_seconds,
                 'fulfillment_rate': fulfillment_rate
             }
             return send_response(result=True,message='Vendor Performance Metrics',data=data)

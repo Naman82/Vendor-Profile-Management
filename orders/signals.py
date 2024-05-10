@@ -41,7 +41,16 @@ def update_fulfillment_rate(sender,instance,created, **kwargs):
             vendor = instance.vendor
             purchase_orders = PurchaseOrder.objects.filter(vendor=vendor)
             completed_purchase_orders = purchase_orders.filter(status='completed')
-            fulfillment_rate = (completed_purchase_orders.count() / purchase_orders.count()) * 100
+            #Calculate the counts
+            total_purchase_orders_count = purchase_orders.count()
+            completed_purchase_orders_count = completed_purchase_orders.count()
+            
+            # Check if denominator is zero
+            if total_purchase_orders_count == 0:
+                fulfillment_rate = 0
+            else:
+                fulfillment_rate = (completed_purchase_orders_count / total_purchase_orders_count) * 100
+       
             vendor.historicalvendorperformance_set.update_or_create(
                 vendor=vendor,
                 date=timezone.now().date(),
@@ -64,7 +73,12 @@ def update_on_time_delivery_rate(sender, instance, created, **kwargs):
             on_time_delivery_orders = completed_purchase_orders.filter(delivery_date__lte=F('delivery_date'))
             
             # Calculate on-time delivery rate
-            on_time_delivery_rate = (on_time_delivery_orders.count() / completed_purchase_orders.count()) * 100.0
+            on_time_delivery_orders_count = on_time_delivery_orders.count()
+            completed_purchase_orders_count = completed_purchase_orders.count()
+            if completed_purchase_orders_count == 0:
+                on_time_delivery_rate = 0
+            else:
+                on_time_delivery_rate = (on_time_delivery_orders.count() / completed_purchase_orders.count()) * 100.0
             
             vendor.historicalvendorperformance_set.update_or_create(
                 vendor=vendor,
